@@ -20,6 +20,7 @@ singers_schema = SingerSchema(many=True)
 class TrackSchema(SQLAlchemySchema):
     class Meta:
         model = Track
+        include_relationships = True
         load_instance = True
 
     id = auto_field()
@@ -39,6 +40,7 @@ class TranslationSchema(SQLAlchemySchema):
         load_instance = True
 
     id = auto_field()
+    track_id = auto_field()
     text = auto_field()
     language = auto_field()
     auto_translate = auto_field()

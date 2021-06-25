@@ -21,6 +21,12 @@ def get_singers_from_id(singers_id):
     return singers
 
 
+def get_translation(track_id):
+    translator = google_translator()
+    track = Track.query.get(track_id)
+    return translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
+
+
 class SingerListResource(Resource):
     def get(self):
         singers = Singer.query.all()
@@ -40,18 +46,14 @@ class SingerResource(Resource):
         singer = Singer.query.get_or_404(id)
         return singer_schema.dump(singer)
 
-    def patch(self, id):
+    def put(self, id):
         singer = Singer.query.get_or_404(id)
-
-        if 'name' in request.json:
-            singer.name = request.json['name']
-
+        singer.name = request.json['name']
         db.session.commit()
         return singer_schema.dump(singer)
 
     def delete(self, id):
-        singer = Singer.query.get_or_404(id)
-        db.session.delete(singer)
+        db.session.delete(Singer.query.get_or_404(id))
         db.session.commit()
         return '', 204
 
@@ -68,6 +70,7 @@ class TrackListResource(Resource):
             original_language=request.json['original_language'],
             singer=get_singers_from_name(request.json['singer'])
         )
+
         db.session.add(new_track)
         db.session.commit()
         return track_schema.dump(new_track)
@@ -78,23 +81,19 @@ class TrackResource(Resource):
         track = Track.query.get_or_404(id)
         return track_schema.dump(track)
 
-    def patch(self, id):
+    def put(self, id):
         track = Track.query.get_or_404(id)
-
-        if 'name' in request.json:
-            track.name = request.json['name']
-
-        if 'text' in request.json:
-            track.text = request.json['text']
-
-        if 'original_language' in request.json:
-            track.original_language = request.json['original_language']
-
-        if 'singer' in request.json:
-            track.singer = get_singers_from_id(request.json['singer'])
-
+        track.name = request.json['name']
+        track.text = request.json['text']
+        track.original_language = request.json['original_language']
+        track.singer = get_singers_from_id(request.json['singer'])
         db.session.commit()
         return track_schema.dump(track)
+
+    def delete(self, id):
+        db.session.delete(Track.query.get_or_404(id))
+        db.session.commit()
+        return '', 204
 
 
 class TranslationListResource(Resource):
@@ -104,9 +103,7 @@ class TranslationListResource(Resource):
 
     def post(self, id):
         if request.json['auto_translate']:
-            translator = google_translator()
-            track = Track.query.get(id)
-            text = translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
+            text = get_translation(id)
         else:
             text = request.json['text']
 
@@ -114,8 +111,33 @@ class TranslationListResource(Resource):
             text=text,
             language=request.json['language'],
             auto_translate=request.json['auto_translate'],
-            track_id=(request.json['track_id'])
+            track_id=id
         )
         db.session.add(new_translation)
         db.session.commit()
         return translation_schema.dump(new_translation)
+
+
+class TranslationResource(Resource):
+    def get(self, id, transl_id):
+        translation = Translation.query.get_or_404(transl_id)
+        return translation_schema.dump(translation)
+
+    def put(self, id, transl_id):
+        translation = Translation.query.get_or_404(transl_id)
+
+        if request.json['auto_translate']:
+            translation.text = get_translation(id)
+        else:
+            translation.text = request.json['text']
+
+        translation.auto_translate = request.json['auto_translate']
+        translation.language = request.json['language']
+        translation.track_id = id
+        db.session.commit()
+        return translation_schema.dump(translation)
+
+    def delete(self, id, transl_id):
+        db.session.delete(Translation.query.get_or_404(id))
+        db.session.commit()
+        return '', 204
