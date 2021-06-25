@@ -23,3 +23,13 @@ class Track(db.Model):
     text = db.Column(db.Text)
     original_language = db.Column(db.String(2), default='en')
     singer = db.relationship('Singer', secondary=track_singers, backref=db.backref('Track', lazy='dynamic'))
+
+
+class Translation(db.Model):
+    __tablename__ = 'translation'
+
+    id = db.Column(db.Integer, primary_key=True)
+    track_id = db.Column(db.Integer, db.ForeignKey('track.id'))
+    text = db.Column(db.Text)
+    language = db.Column(db.String(2), default='en')
+    auto_translate = db.Column(db.Boolean, default=True)

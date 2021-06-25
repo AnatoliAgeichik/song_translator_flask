@@ -1,8 +1,10 @@
 from flask import request
 from flask_restful import Resource
+from google_trans_new import google_translator
+
 from .config import db
-from .models import Singer, Track
-from .schema import singers_schema, singer_schema, track_schema, tracks_schema
+from .models import Singer, Track, Translation
+from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema
 
 
 def get_singers_from_name(singers_name):
@@ -93,3 +95,27 @@ class TrackResource(Resource):
 
         db.session.commit()
         return track_schema.dump(track)
+
+
+class TranslationListResource(Resource):
+    def get(self, id):
+        translation = Translation.query.filter_by(track_id=id).all()
+        return translations_schema.dump(translation)
+
+    def post(self, id):
+        if request.json['auto_translate']:
+            translator = google_translator()
+            track = Track.query.get(id)
+            text = translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
+        else:
+            text = request.json['text']
+
+        new_translation = Translation(
+            text=text,
+            language=request.json['language'],
+            auto_translate=request.json['auto_translate'],
+            track_id=(request.json['track_id'])
+        )
+        db.session.add(new_translation)
+        db.session.commit()
+        return translation_schema.dump(new_translation)
