@@ -33,3 +33,11 @@ class Translation(db.Model):
     text = db.Column(db.Text)
     language = db.Column(db.String(2), default='en')
     auto_translate = db.Column(db.Boolean, default=True)
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(200))
+    name = db.Column(db.String(200), unique=True)
+    password = db.Column(db.String(200))
+    admin = db.Column(db.Boolean, default=False)

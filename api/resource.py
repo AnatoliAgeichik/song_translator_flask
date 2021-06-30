@@ -1,11 +1,16 @@
-from flask import request
+from flask import request, jsonify, make_response
 from flask_restful import Resource
 from google_trans_new import google_translator
+from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
+import jwt
+import datetime
 
-from .config import db
-from .models import Singer, Track, Translation
-from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema
-
+from .config import db, app
+from .models import Singer, Track, Translation, User
+from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
+                    user_schema
+from .services import token_required
 
 def get_singers_from_name(singers_name):
     singers = []
@@ -32,6 +37,7 @@ class SingerListResource(Resource):
         singers = Singer.query.all()
         return singers_schema.dump(singers)
 
+    @token_required
     def post(self):
         new_singer = Singer(
             name=request.json['name']
@@ -46,12 +52,14 @@ class SingerResource(Resource):
         singer = Singer.query.get_or_404(id)
         return singer_schema.dump(singer)
 
+    @token_required
     def put(self, id):
         singer = Singer.query.get_or_404(id)
         singer.name = request.json['name']
         db.session.commit()
         return singer_schema.dump(singer)
 
+    @token_required
     def delete(self, id):
         db.session.delete(Singer.query.get_or_404(id))
         db.session.commit()
@@ -63,6 +71,7 @@ class TrackListResource(Resource):
         tracks = Track.query.all()
         return tracks_schema.dump(tracks)
 
+    @token_required
     def post(self):
         new_track = Track(
             name=request.json['name'],
@@ -81,6 +90,7 @@ class TrackResource(Resource):
         track = Track.query.get_or_404(id)
         return track_schema.dump(track)
 
+    @token_required
     def put(self, id):
         track = Track.query.get_or_404(id)
         track.name = request.json['name']
@@ -90,6 +100,7 @@ class TrackResource(Resource):
         db.session.commit()
         return track_schema.dump(track)
 
+    @token_required
     def delete(self, id):
         db.session.delete(Track.query.get_or_404(id))
         db.session.commit()
@@ -101,6 +112,7 @@ class TranslationListResource(Resource):
         translation = Translation.query.filter_by(track_id=id).all()
         return translations_schema.dump(translation)
 
+    @token_required
     def post(self, id):
         if request.json['auto_translate']:
             text = get_translation(id)
@@ -123,6 +135,7 @@ class TranslationResource(Resource):
         translation = Translation.query.get_or_404(transl_id)
         return translation_schema.dump(translation)
 
+    @token_required
     def put(self, id, transl_id):
         translation = Translation.query.get_or_404(transl_id)
 
@@ -137,7 +150,38 @@ class TranslationResource(Resource):
         db.session.commit()
         return translation_schema.dump(translation)
 
+    @token_required
     def delete(self, id, transl_id):
         db.session.delete(Translation.query.get_or_404(id))
         db.session.commit()
         return '', 204
+
+
+class SignupUser(Resource):
+    def post(self):
+        data = request.get_json()
+
+        hashed_password = generate_password_hash(data['password'], method='sha256')
+
+        new_user = User(public_id=str(uuid.uuid4()), name=data['name'], password=hashed_password, admin=False)
+        db.session.add(new_user)
+        db.session.commit()
+        return user_schema.dump(new_user)
+
+
+class LoginUser(Resource):
+    def post(self):
+        auth = request.authorization
+
+        if not auth or not auth.username or not auth.password:
+            return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+
+        user = User.query.filter_by(name=auth.username).first()
+
+        if check_password_hash(user.password, auth.password):
+            token = jwt.encode(
+                {'public_id': user.public_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
+                app.config['SECRET_KEY'])
+            return jsonify({'token': token})
+
+        return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})

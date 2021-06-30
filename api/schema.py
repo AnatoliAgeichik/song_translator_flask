@@ -1,6 +1,6 @@
 from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
 
-from .models import Singer, Track, Translation
+from .models import Singer, Track, Translation, User
 
 
 class SingerSchema(SQLAlchemySchema):
@@ -48,3 +48,18 @@ class TranslationSchema(SQLAlchemySchema):
 
 translation_schema = TranslationSchema()
 translations_schema = TranslationSchema(many=True)
+
+
+class UserSchema(SQLAlchemySchema):
+    class Meta:
+        model = User
+        load_instance = True
+
+    id = auto_field()
+    public_id = auto_field()
+    name = auto_field()
+    password = auto_field()
+    admin = auto_field()
+
+
+user_schema = UserSchema()
