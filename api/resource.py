@@ -6,11 +6,12 @@ import uuid
 import jwt
 import datetime
 
-from .config import db, app
+from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
 from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
                     user_schema
 from .services import token_required
+
 
 def get_singers_from_name(singers_name):
     singers = []
@@ -34,8 +35,7 @@ def get_translation(track_id):
 
 class SingerListResource(Resource):
     def get(self):
-        singers = Singer.query.all()
-        return singers_schema.dump(singers)
+        return pagination.paginate(Singer, singers_schema, True)
 
     @token_required
     def post(self):
@@ -68,8 +68,7 @@ class SingerResource(Resource):
 
 class TrackListResource(Resource):
     def get(self):
-        tracks = Track.query.all()
-        return tracks_schema.dump(tracks)
+        return pagination.paginate(Track, tracks_schema, True)
 
     @token_required
     def post(self):
@@ -109,8 +108,7 @@ class TrackResource(Resource):
 
 class TranslationListResource(Resource):
     def get(self, id):
-        translation = Translation.query.filter_by(track_id=id).all()
-        return translations_schema.dump(translation)
+        return pagination.paginate(Translation.query.filter_by(track_id=id).all(), translations_schema, True)
 
     @token_required
     def post(self, id):
