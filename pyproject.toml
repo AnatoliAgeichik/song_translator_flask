@@ -16,6 +16,9 @@ Flask-Migrate = "^3.0.1"
 marshmallow-sqlalchemy = "^0.26.1"
 google-trans-new = "^1.1.9"
 requests = "^2.25.1"
+uuid = "^1.30"
+PyJWT = "^2.1.0"
+DateTime = "^4.3"
 
 [tool.poetry.dev-dependencies]
 
