@@ -11,7 +11,7 @@ from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
 from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
                     user_schema
-from .services import token_required
+from .services import token_required, get_search_value
 
 
 def get_singers_from_name(singers_name):
@@ -31,13 +31,13 @@ def get_singers_from_id(singers_id):
 def get_translation(track_id):
     translator = google_translator()
     track = Track.query.get(track_id)
-    return translator.translate(track.text, lang_tgt='en', lang_src=track.original_language)
+    return translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
 
 
 class SingerListResource(Resource):
     def get(self):
-        search = request.args.get('search') if request.args.get('search') else ''
-        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{search}%')).all(), singers_schema, True)
+        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{get_search_value(request)}%')).all(),
+                                   singers_schema, True)
 
     @token_required
     def post(self):
@@ -51,8 +51,7 @@ class SingerListResource(Resource):
 
 class SingerResource(Resource):
     def get(self, id):
-        singer = Singer.query.get_or_404(id)
-        return singer_schema.dump(singer)
+        return singer_schema.dump(Singer.query.get_or_404(id))
 
     @token_required
     def put(self, id):
@@ -70,7 +69,7 @@ class SingerResource(Resource):
 
 class TrackListResource(Resource):
     def get(self):
-        search = request.args.get('search') if request.args.get('search') else ''
+        search = get_search_value(request)
         return pagination.paginate(Track.query.filter(or_(Track.name.like(f'%{search}%'),
                                                           Track.text.like(f'%{search}%'),
                                                           Track.original_language.like(f'%{search}%'))),
@@ -92,8 +91,7 @@ class TrackListResource(Resource):
 
 class TrackResource(Resource):
     def get(self, id):
-        track = Track.query.get_or_404(id)
-        return track_schema.dump(track)
+        return track_schema.dump(Track.query.get_or_404(id))
 
     @token_required
     def put(self, id):
@@ -114,19 +112,16 @@ class TrackResource(Resource):
 
 class TranslationListResource(Resource):
     def get(self, id):
-        print(id)
-        search = request.args.get('search') if request.args.get('search') else ''
+        search = get_search_value(request)
         return pagination.paginate(Translation.query.filter_by(track_id=id)
                                    .filter(or_(Translation.text.like(f'%{search}%'),
                                            Translation.language.like(f'%{search}%'))), translations_schema, True)
 
     def post(self, id):
         if request.json['auto_translate']:
-            print(id)
             text = get_translation(id)
         else:
             text = request.json['text']
-        print(text)
         new_translation = Translation(
             text=text,
             language=request.json['language'],
@@ -140,8 +135,7 @@ class TranslationListResource(Resource):
 
 class TranslationResource(Resource):
     def get(self, id, transl_id):
-        translation = Translation.query.get_or_404(transl_id)
-        return translation_schema.dump(translation)
+        return translation_schema.dump(Translation.query.get_or_404(transl_id))
 
     @token_required
     def put(self, id, transl_id):
@@ -160,7 +154,7 @@ class TranslationResource(Resource):
 
     @token_required
     def delete(self, id, transl_id):
-        db.session.delete(Translation.query.get_or_404(id))
+        db.session.delete(Translation.query.get_or_404(transl_id))
         db.session.commit()
         return '', 204
 
