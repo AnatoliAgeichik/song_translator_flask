@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 import jwt
 import datetime
+from sqlalchemy import or_
 
 from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
@@ -30,12 +31,13 @@ def get_singers_from_id(singers_id):
 def get_translation(track_id):
     translator = google_translator()
     track = Track.query.get(track_id)
-    return translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
+    return translator.translate(track.text, lang_tgt='en', lang_src=track.original_language)
 
 
 class SingerListResource(Resource):
     def get(self):
-        return pagination.paginate(Singer, singers_schema, True)
+        search = request.args.get('search') if request.args.get('search') else ''
+        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{search}%')).all(), singers_schema, True)
 
     @token_required
     def post(self):
@@ -68,7 +70,11 @@ class SingerResource(Resource):
 
 class TrackListResource(Resource):
     def get(self):
-        return pagination.paginate(Track, tracks_schema, True)
+        search = request.args.get('search') if request.args.get('search') else ''
+        return pagination.paginate(Track.query.filter(or_(Track.name.like(f'%{search}%'),
+                                                          Track.text.like(f'%{search}%'),
+                                                          Track.original_language.like(f'%{search}%'))),
+                                   tracks_schema, True)
 
     @token_required
     def post(self):
@@ -108,15 +114,19 @@ class TrackResource(Resource):
 
 class TranslationListResource(Resource):
     def get(self, id):
-        return pagination.paginate(Translation.query.filter_by(track_id=id).all(), translations_schema, True)
+        print(id)
+        search = request.args.get('search') if request.args.get('search') else ''
+        return pagination.paginate(Translation.query.filter_by(track_id=id)
+                                   .filter(or_(Translation.text.like(f'%{search}%'),
+                                           Translation.language.like(f'%{search}%'))), translations_schema, True)
 
-    @token_required
     def post(self, id):
         if request.json['auto_translate']:
+            print(id)
             text = get_translation(id)
         else:
             text = request.json['text']
-
+        print(text)
         new_translation = Translation(
             text=text,
             language=request.json['language'],

@@ -28,6 +28,6 @@ def token_required(f):
         except:
             return jsonify({'message': 'token is invalid'})
 
-        return f(current_user)
+        return f(current_user, **kwargs)
 
     return decorator
