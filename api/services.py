@@ -28,6 +28,10 @@ def token_required(f):
         except:
             return jsonify({'message': 'token is invalid'})
 
-        return f(current_user)
+        return f(current_user, **kwargs)
 
     return decorator
+
+
+def get_search_value(request):
+    return request.args.get('search') if request.args.get('search') else ''
