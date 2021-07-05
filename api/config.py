@@ -25,9 +25,3 @@ pagination = Pagination(app, db)
 handler = logging.FileHandler('app.log')
 handler.setLevel(logging.DEBUG)
 logging.getLogger('sqlalchemy').addHandler(handler)
-
-from .models import *
-from .urls import *
-
-from .config import db
-db.create_all()

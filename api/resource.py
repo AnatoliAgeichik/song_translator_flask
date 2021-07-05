@@ -37,7 +37,7 @@ def get_translation(track_id):
 
 class SingerListResource(Resource):
     def get(self):
-        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{get_search_value(request)}%'))
+        return pagination.paginate(Singer.query.filter(Singer.name.ilike(f'%{get_search_value(request)}%'))
                                    .order_by(get_sort_parametr_singer(request)),
                                    singers_schema, True)
 
@@ -72,9 +72,9 @@ class SingerResource(Resource):
 class TrackListResource(Resource):
     def get(self):
         search = get_search_value(request)
-        return pagination.paginate(Track.query.filter(or_(Track.name.like(f'%{search}%'),
-                                                          Track.text.like(f'%{search}%'),
-                                                          Track.original_language.like(f'%{search}%')))
+        return pagination.paginate(Track.query.filter(or_(Track.name.ilike(f'%{search}%'),
+                                                          Track.text.ilike(f'%{search}%'),
+                                                          Track.original_language.ilike(f'%{search}%')))
                                    .order_by(get_sort_parametr_track(request)),
                                    tracks_schema, True)
 
@@ -117,10 +117,11 @@ class TranslationListResource(Resource):
     def get(self, id):
         search = get_search_value(request)
         return pagination.paginate(Translation.query.filter_by(track_id=id)
-                                   .filter(or_(Translation.text.like(f'%{search}%'),
-                                           Translation.language.like(f'%{search}%')))
+                                   .filter(or_(Translation.text.ilike(f'%{search}%'),
+                                           Translation.language.ilike(f'%{search}%')))
                                    .order_by(get_sort_parametr_translation(request)), translations_schema, True)
 
+    @token_required
     def post(self, id):
         if request.json['auto_translate']:
             text = get_translation(id)
