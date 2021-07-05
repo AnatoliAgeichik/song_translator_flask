@@ -24,9 +24,14 @@ def token_required(f):
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=os.getenv('JWT_ALGORITHM'))
-            User.query.filter_by(public_id=data['public_id']).first()
-        except:
+            if not User.query.filter_by(public_id=data['public_id']).first():
+                return jsonify({'message': 'token is invalid'})
+        except jwt.exceptions.InvalidTokenError:
             return jsonify({'message': 'token is invalid'})
+        except jwt.exceptions.InvalidKeyError:
+            return jsonify({'message': 'key is invalid'})
+        except jwt.exceptions.InvalidAlgorithmError:
+            return jsonify({'message': 'algortithm is invalid'})
 
         return f(*args, **kwargs)
 
@@ -42,7 +47,7 @@ def get_sort_parameter(request):
 
 
 def get_sort_parameter_singer(request):
-    sort = get_sort_parametr(request)
+    sort = get_sort_parameter(request)
     if sort == 'name':
         return Singer.name.asc()
     elif sort == '-name':
@@ -50,7 +55,7 @@ def get_sort_parameter_singer(request):
 
 
 def get_sort_parameter_track(request):
-    sort = get_sort_parametr(request)
+    sort = get_sort_parameter(request)
 
     if sort == 'name':
         return Track.name.asc()
@@ -67,7 +72,7 @@ def get_sort_parameter_track(request):
 
 
 def get_sort_parameter_translation(request):
-    sort = get_sort_parametr(request)
+    sort = get_sort_parameter(request)
 
     if sort == 'text':
         return Translation.text.asc()

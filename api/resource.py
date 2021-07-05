@@ -11,8 +11,8 @@ from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
 from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
                     user_schema
-from .services import token_required, get_search_value, get_sort_parametr_singer, get_sort_parametr_track,\
-                      get_sort_parametr_translation
+from .services import token_required, get_search_value, get_sort_parameter_singer, get_sort_parameter_track,\
+                      get_sort_parameter_translation
 
 
 def get_singers_from_name(singers_name):
@@ -38,7 +38,7 @@ def get_translation(track_id):
 class SingerListResource(Resource):
     def get(self):
         return pagination.paginate(Singer.query.filter(Singer.name.ilike(f'%{get_search_value(request)}%'))
-                                   .order_by(get_sort_parametr_singer(request)),
+                                   .order_by(get_sort_parameter_singer(request)),
                                    singers_schema, True)
 
     @token_required
@@ -75,7 +75,7 @@ class TrackListResource(Resource):
         return pagination.paginate(Track.query.filter(or_(Track.name.ilike(f'%{search}%'),
                                                           Track.text.ilike(f'%{search}%'),
                                                           Track.original_language.ilike(f'%{search}%')))
-                                   .order_by(get_sort_parametr_track(request)),
+                                   .order_by(get_sort_parameter_track(request)),
                                    tracks_schema, True)
 
     @token_required
@@ -119,7 +119,7 @@ class TranslationListResource(Resource):
         return pagination.paginate(Translation.query.filter_by(track_id=id)
                                    .filter(or_(Translation.text.ilike(f'%{search}%'),
                                            Translation.language.ilike(f'%{search}%')))
-                                   .order_by(get_sort_parametr_translation(request)), translations_schema, True)
+                                   .order_by(get_sort_parameter_translation(request)), translations_schema, True)
 
     @token_required
     def post(self, id):
