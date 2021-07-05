@@ -2,7 +2,7 @@ from flask import request, jsonify
 import jwt
 from functools import wraps
 
-from .models import User
+from .models import User, Singer, Track, Translation
 from .config import app
 import os
 from dotenv import load_dotenv
@@ -35,3 +35,45 @@ def token_required(f):
 
 def get_search_value(request):
     return request.args.get('search') if request.args.get('search') else ''
+
+
+def get_sort_parametr(request):
+    return request.args.get('sort')
+
+
+def get_sort_parametr_singer(request):
+    sort = get_sort_parametr(request)
+    if sort == 'name':
+        return Singer.name.asc()
+    elif sort == '-name':
+        return Singer.name.desc()
+
+
+def get_sort_parametr_track(request):
+    sort = get_sort_parametr(request)
+
+    if sort == 'name':
+        return Track.name.asc()
+    elif sort == '-name':
+        return Track.name.desc()
+    elif sort == 'text':
+        return Track.text.asc()
+    elif sort == '-text':
+        return Track.text.desc()
+    elif sort == 'original_language':
+        return Track.original_language.asc()
+    elif sort == '-original_language':
+        return Track.original_language.desc()
+
+
+def get_sort_parametr_translation(request):
+    sort = get_sort_parametr(request)
+
+    if sort == 'text':
+        return Translation.text.asc()
+    elif sort == '-text':
+        return Translation.text.desc()
+    elif sort == 'language':
+        return Translation.language.asc()
+    elif sort == '-language':
+        return Translation.language.desc()

@@ -11,7 +11,8 @@ from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
 from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
                     user_schema
-from .services import token_required, get_search_value
+from .services import token_required, get_search_value, get_sort_parametr_singer, get_sort_parametr_track,\
+                      get_sort_parametr_translation
 
 
 def get_singers_from_name(singers_name):
@@ -36,7 +37,8 @@ def get_translation(track_id):
 
 class SingerListResource(Resource):
     def get(self):
-        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{get_search_value(request)}%')).all(),
+        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{get_search_value(request)}%'))
+                                   .order_by(get_sort_parametr_singer(request)),
                                    singers_schema, True)
 
     @token_required
@@ -72,7 +74,8 @@ class TrackListResource(Resource):
         search = get_search_value(request)
         return pagination.paginate(Track.query.filter(or_(Track.name.like(f'%{search}%'),
                                                           Track.text.like(f'%{search}%'),
-                                                          Track.original_language.like(f'%{search}%'))),
+                                                          Track.original_language.like(f'%{search}%')))
+                                   .order_by(get_sort_parametr_track(request)),
                                    tracks_schema, True)
 
     @token_required
@@ -115,7 +118,8 @@ class TranslationListResource(Resource):
         search = get_search_value(request)
         return pagination.paginate(Translation.query.filter_by(track_id=id)
                                    .filter(or_(Translation.text.like(f'%{search}%'),
-                                           Translation.language.like(f'%{search}%'))), translations_schema, True)
+                                           Translation.language.like(f'%{search}%')))
+                                   .order_by(get_sort_parametr_translation(request)), translations_schema, True)
 
     def post(self, id):
         if request.json['auto_translate']:
@@ -162,9 +166,7 @@ class TranslationResource(Resource):
 class SignupUser(Resource):
     def post(self):
         data = request.get_json()
-
         hashed_password = generate_password_hash(data['password'], method='sha256')
-
         new_user = User(public_id=str(uuid.uuid4()), name=data['name'], password=hashed_password, admin=False)
         db.session.add(new_user)
         db.session.commit()
