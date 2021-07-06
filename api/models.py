@@ -10,7 +10,7 @@ track_singers = db.Table('track_singers', db.metadata,
 class Base:
     id = db.Column(db.Integer, primary_key=True)
     created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updatetime = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    update_date = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Singer(db.Model, Base):
