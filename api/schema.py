@@ -11,6 +11,8 @@ class SingerSchema(SQLAlchemySchema):
 
     id = auto_field()
     name = auto_field()
+    created_date = auto_field()
+    updatetime = auto_field()
 
 
 singer_schema = SingerSchema()
@@ -28,6 +30,8 @@ class TrackSchema(SQLAlchemySchema):
     text = auto_field()
     original_language = auto_field()
     singer = auto_field()
+    created_date = auto_field()
+    updatetime = auto_field()
 
 
 track_schema = TrackSchema()
@@ -44,6 +48,8 @@ class TranslationSchema(SQLAlchemySchema):
     text = auto_field()
     language = auto_field()
     auto_translate = auto_field()
+    created_date = auto_field()
+    updatetime = auto_field()
 
 
 translation_schema = TranslationSchema()
@@ -60,6 +66,8 @@ class UserSchema(SQLAlchemySchema):
     name = auto_field()
     password = auto_field()
     admin = auto_field()
+    created_date = auto_field()
+    updatetime = auto_field()
 
 
 user_schema = UserSchema()
