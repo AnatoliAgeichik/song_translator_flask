@@ -33,7 +33,7 @@ translations_schema = TranslationSchema(many=True)
 
 class UserSchema(ma.Schema):
     class Meta:
-        fields = ("id", "public_id", "name", "admin", "created_date", "update_date")
+        fields = ("id", "public_id", "name", "admin", "created_date", "password", "update_date")
 
 
 user_schema = UserSchema()

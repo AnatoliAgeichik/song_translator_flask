@@ -182,6 +182,7 @@ class LoginUser(Resource):
             return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
 
         user = User.query.filter_by(name=auth.username).first()
+        print(user)
 
         if check_password_hash(user.password, auth.password):
             token = jwt.encode(
