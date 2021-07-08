@@ -1,2 +1,2 @@
 from .config import app
-from .urls import *
+from .urls import api
