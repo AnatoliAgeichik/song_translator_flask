@@ -1,8 +1,8 @@
-"""add nullable attribute
+"""empty message
 
-Revision ID: bb1650639b58
+Revision ID: 751506d15bd1
 Revises: 4c386d5f874c
-Create Date: 2021-07-08 16:11:47.998730
+Create Date: 2021-07-08 17:47:43.852559
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "bb1650639b58"
+revision = "751506d15bd1"
 down_revision = "4c386d5f874c"
 branch_labels = None
 depends_on = None
