@@ -17,34 +17,38 @@ def token_required(f):
 
         token = None
 
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
+        if "x-access-token" in request.headers:
+            token = request.headers["x-access-token"]
 
         if not token:
-            return jsonify({'message': 'a valid token is missing'})
+            return jsonify({"message": "a valid token is missing"})
 
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=os.getenv('JWT_ALGORITHM'))
-            if not User.query.filter_by(public_id=data['public_id']).first():
-                return jsonify({'message': 'token is invalid'})
+            data = jwt.decode(
+                token, app.config["SECRET_KEY"], algorithms=os.getenv("JWT_ALGORITHM")
+            )
+            print(data)
+            if not User.query.filter_by(public_id=data["public_id"]).first():
+                return jsonify({"message": "token is invalid"})
+            user_id = User.query.filter_by(public_id=data["public_id"]).first().id
         except jwt.exceptions.InvalidTokenError:
-            return jsonify({'message': 'token is invalid'})
+            return jsonify({"message": "token is invalid"})
         except jwt.exceptions.InvalidKeyError:
-            return jsonify({'message': 'key is invalid'})
+            return jsonify({"message": "key is invalid"})
         except jwt.exceptions.InvalidAlgorithmError:
-            return jsonify({'message': 'algortithm is invalid'})
+            return jsonify({"message": "algortithm is invalid"})
 
-        return f(*args, **kwargs)
+        return f(*args, user_id, **kwargs)
 
     return decorator
 
 
 def get_search_value(request):
-    return request.args.get('search') if request.args.get('search') else ''
+    return request.args.get("search") if request.args.get("search") else ""
 
 
 def get_sort_parameter(request):
-    return request.args.get('sort')
+    return request.args.get("sort")
 
 
 def get_sort_parameter_singer(request):

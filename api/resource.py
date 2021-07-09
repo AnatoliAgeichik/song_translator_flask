@@ -60,8 +60,8 @@ class SingerListResource(Resource):
         )
 
     @token_required
-    def post(self):
-        new_singer = Singer(name=request.json["name"])
+    def post(self, user_id):
+        new_singer = Singer(name=request.json["name"], owner_id=user_id)
         db.session.add(new_singer)
         db.session.commit()
         return singer_schema.dump(new_singer)
@@ -72,14 +72,14 @@ class SingerResource(Resource):
         return singer_schema.dump(Singer.query.get_or_404(id))
 
     @token_required
-    def put(self, id):
+    def put(self, user_id, id):
         singer = Singer.query.get_or_404(id)
         singer.name = request.json["name"]
         db.session.commit()
         return singer_schema.dump(singer)
 
     @token_required
-    def delete(self, id):
+    def delete(self, user_id, id):
         db.session.delete(Singer.query.get_or_404(id))
         db.session.commit()
         return "", 204
@@ -101,12 +101,13 @@ class TrackListResource(Resource):
         )
 
     @token_required
-    def post(self):
+    def post(self, user_id):
         new_track = Track(
             name=request.json["name"],
             text=request.json["text"],
             original_language=request.json["original_language"],
             singer=get_singers_from_name(request.json["singer"]),
+            owner_id=user_id,
         )
 
         db.session.add(new_track)
@@ -119,7 +120,7 @@ class TrackResource(Resource):
         return track_schema.dump(Track.query.get_or_404(id))
 
     @token_required
-    def put(self, id):
+    def put(self, user_id, id):
         track = Track.query.get_or_404(id)
         track.name = request.json["name"]
         track.text = request.json["text"]
@@ -129,7 +130,7 @@ class TrackResource(Resource):
         return track_schema.dump(track)
 
     @token_required
-    def delete(self, id):
+    def delete(self, user_id, id):
         db.session.delete(Track.query.get_or_404(id))
         db.session.commit()
         return "", 204
@@ -152,7 +153,7 @@ class TranslationListResource(Resource):
         )
 
     @token_required
-    def post(self, id):
+    def post(self, user_id, id):
         if request.json["auto_translate"]:
             text = get_translation(id)
         else:
@@ -162,6 +163,7 @@ class TranslationListResource(Resource):
             language=request.json["language"],
             auto_translate=request.json["auto_translate"],
             track_id=id,
+            owner_id=user_id,
         )
         db.session.add(new_translation)
         db.session.commit()
@@ -173,7 +175,7 @@ class TranslationResource(Resource):
         return translation_schema.dump(Translation.query.get_or_404(transl_id))
 
     @token_required
-    def put(self, id, transl_id):
+    def put(self, user_id, id, transl_id):
         translation = Translation.query.get_or_404(transl_id)
 
         if request.json["auto_translate"]:
@@ -188,7 +190,7 @@ class TranslationResource(Resource):
         return translation_schema.dump(translation)
 
     @token_required
-    def delete(self, id, transl_id):
+    def delete(self, user_id, id, transl_id):
         db.session.delete(Translation.query.get_or_404(transl_id))
         db.session.commit()
         return "", 204

@@ -1,6 +1,18 @@
 import datetime
 from sqlalchemy import func
+from sqlalchemy import event
+from .config import app
+
 from .config import db
+
+
+def orm_log_after(tablename, method, owner_id, id):
+    app.logger.debug(f"user_id {owner_id} finished {method} a {tablename} {id}")
+
+
+def orm_log_before(tablename, method, owner_id):
+    app.logger.debug(f"user_id {owner_id} started {method} a {tablename}")
+
 
 track_singers = db.Table(
     "track_singers",
@@ -26,9 +38,46 @@ class Singer(Base):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     def __repr__(self):
         return "<Singer %s>" % self.name
+
+
+@event.listens_for(Singer, "after_insert")
+def insert_log(mapper, connection, target):
+    orm_log_after(
+        tablename="singer", method="created", owner_id=target.owner_id, id=target.id
+    )
+
+
+@event.listens_for(Singer, "before_insert")
+def insert_log(mapper, connection, target):
+    orm_log_before(tablename="singer", method="created", owner_id=target.owner_id)
+
+
+@event.listens_for(Singer, "before_update")
+def update_log(mapper, connection, target):
+    orm_log_before(tablename="singer", method="update", owner_id=target.owner_id)
+
+
+@event.listens_for(Singer, "after_update")
+def update_log(mapper, connection, target):
+    orm_log_after(
+        tablename="singer", method="update", owner_id=target.owner_id, id=target.id
+    )
+
+
+@event.listens_for(Singer, "before_delete")
+def delete_log(mapper, connection, target):
+    orm_log_before(tablename="singer", method="delete", owner_id=target.owner_id)
+
+
+@event.listens_for(Singer, "after_delete")
+def delete_log(mapper, connection, target):
+    orm_log_after(
+        tablename="singer", method="delete", owner_id=target.owner_id, id=target.id
+    )
 
 
 class Track(Base):
@@ -42,6 +91,43 @@ class Track(Base):
         "Singer", secondary=track_singers, backref=db.backref("track", lazy="dynamic")
     )
     singer_id = db.Column(db.Integer, db.ForeignKey("singer.id"))
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+
+@event.listens_for(Track, "after_insert")
+def insert_log(mapper, connection, target):
+    orm_log_after(
+        tablename="track", method="created", owner_id=target.owner_id, id=target.id
+    )
+
+
+@event.listens_for(Track, "before_insert")
+def insert_log(mapper, connection, target):
+    orm_log_before(tablename="track", method="created", owner_id=target.owner_id)
+
+
+@event.listens_for(Track, "before_update")
+def update_log(mapper, connection, target):
+    orm_log_before(tablename="track", method="update", owner_id=target.owner_id)
+
+
+@event.listens_for(Track, "after_update")
+def update_log(mapper, connection, target):
+    orm_log_after(
+        tablename="track", method="update", owner_id=target.owner_id, id=target.id
+    )
+
+
+@event.listens_for(Track, "before_delete")
+def delete_log(mapper, connection, target):
+    orm_log_before(tablename="track", method="delete", owner_id=target.owner_id)
+
+
+@event.listens_for(Track, "after_delete")
+def delete_log(mapper, connection, target):
+    orm_log_after(
+        tablename="track", method="delete", owner_id=target.owner_id, id=target.id
+    )
 
 
 class Translation(Base):
@@ -52,9 +138,50 @@ class Translation(Base):
     id = db.Column(db.Integer, primary_key=True)
     language = db.Column(db.CHAR(2), default="en", nullable=False)
     auto_translate = db.Column(db.Boolean, default=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+
+@event.listens_for(Translation, "after_insert")
+def insert_log(mapper, connection, target):
+    orm_log_after(
+        tablename="translation",
+        method="created",
+        owner_id=target.owner_id,
+        id=target.id,
+    )
+
+
+@event.listens_for(Translation, "before_insert")
+def insert_log(mapper, connection, target):
+    orm_log_before(tablename="translation", method="created", owner_id=target.owner_id)
+
+
+@event.listens_for(Translation, "before_update")
+def update_log(mapper, connection, target):
+    orm_log_before(tablename="translation", method="update", owner_id=target.owner_id)
+
+
+@event.listens_for(Translation, "after_update")
+def update_log(mapper, connection, target):
+    orm_log_after(
+        tablename="translation", method="update", owner_id=target.owner_id, id=target.id
+    )
+
+
+@event.listens_for(Translation, "before_delete")
+def delete_log(mapper, connection, target):
+    orm_log_before(tablename="translation", method="delete", owner_id=target.owner_id)
+
+
+@event.listens_for(Translation, "after_delete")
+def delete_log(mapper, connection, target):
+    orm_log_after(
+        tablename="translation", method="delete", owner_id=target.owner_id, id=target.id
+    )
 
 
 class User(Base):
+    __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(200), nullable=False)
