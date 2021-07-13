@@ -7,11 +7,7 @@ from .config import app, db
 
 
 def orm_log_after(tablename, method, owner_id, id):
-    app.logger.error(f"user_id {owner_id} finished {method} a {tablename} {id}")
-
-
-def orm_log_rollback(tablename, method, owner_id, id):
-    app.logger.debug(f"user_id {owner_id} started {method} a {tablename} {id} ROLLBACK")
+    app.logger.debug(f"user_id {owner_id} finished {method} a {tablename} {id}")
 
 
 track_singers = db.Table(
@@ -82,9 +78,12 @@ class User(Base):
 @event.listens_for(Session, "after_flush")
 def after_flush(session, flush_context):
 
-    for obj in session.new:
-        orm_log_after(obj.__table__, "create", obj.owner_id, obj.id)
-    for obj in session.deleted:
-        orm_log_after(obj.__table__, "delete", obj.owner_id, obj.id)
-    for obj in session.dirty:
-        orm_log_after(obj.__table__, "update", obj.owner_id, obj.id)
+    try:
+        for obj in session.new:
+            orm_log_after(obj.__table__, "create", obj.owner_id, obj.id)
+        for obj in session.deleted:
+            orm_log_after(obj.__table__, "delete", obj.owner_id, obj.id)
+        for obj in session.dirty:
+            orm_log_after(obj.__table__, "update", obj.owner_id, obj.id)
+    except AttributeError as e:
+        app.logger.error(str(e))
