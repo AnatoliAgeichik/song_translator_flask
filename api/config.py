@@ -3,9 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_rest_paginate import Pagination
+
 import os
 from dotenv import load_dotenv
-
 
 load_dotenv()
 
@@ -16,6 +16,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["JWT_ALGORITHM"] = os.getenv("JWT_ALGORITHM")
 app.config["SQLALCHEMY_ECHO"] = False
+
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)

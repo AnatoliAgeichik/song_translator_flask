@@ -27,7 +27,6 @@ def token_required(f):
             data = jwt.decode(
                 token, app.config["SECRET_KEY"], algorithms=os.getenv("JWT_ALGORITHM")
             )
-            print(data)
             if not User.query.filter_by(public_id=data["public_id"]).first():
                 return jsonify({"message": "token is invalid"})
             user_id = User.query.filter_by(public_id=data["public_id"]).first().id

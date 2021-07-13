@@ -1,17 +1,17 @@
 import datetime
 from sqlalchemy import func
 from sqlalchemy import event
-from .config import app
+from sqlalchemy.orm import Session
 
-from .config import db
+from .config import app, db
 
 
 def orm_log_after(tablename, method, owner_id, id):
-    app.logger.debug(f"user_id {owner_id} finished {method} a {tablename} {id}")
+    app.logger.error(f"user_id {owner_id} finished {method} a {tablename} {id}")
 
 
-def orm_log_before(tablename, method, owner_id):
-    app.logger.debug(f"user_id {owner_id} started {method} a {tablename}")
+def orm_log_rollback(tablename, method, owner_id, id):
+    app.logger.debug(f"user_id {owner_id} started {method} a {tablename} {id} ROLLBACK")
 
 
 track_singers = db.Table(
@@ -44,42 +44,6 @@ class Singer(Base):
         return "<Singer %s>" % self.name
 
 
-@event.listens_for(Singer, "after_insert")
-def insert_log(mapper, connection, target):
-    orm_log_after(
-        tablename="singer", method="created", owner_id=target.owner_id, id=target.id
-    )
-
-
-@event.listens_for(Singer, "before_insert")
-def insert_log(mapper, connection, target):
-    orm_log_before(tablename="singer", method="created", owner_id=target.owner_id)
-
-
-@event.listens_for(Singer, "before_update")
-def update_log(mapper, connection, target):
-    orm_log_before(tablename="singer", method="update", owner_id=target.owner_id)
-
-
-@event.listens_for(Singer, "after_update")
-def update_log(mapper, connection, target):
-    orm_log_after(
-        tablename="singer", method="update", owner_id=target.owner_id, id=target.id
-    )
-
-
-@event.listens_for(Singer, "before_delete")
-def delete_log(mapper, connection, target):
-    orm_log_before(tablename="singer", method="delete", owner_id=target.owner_id)
-
-
-@event.listens_for(Singer, "after_delete")
-def delete_log(mapper, connection, target):
-    orm_log_after(
-        tablename="singer", method="delete", owner_id=target.owner_id, id=target.id
-    )
-
-
 class Track(Base):
     __tablename__ = "track"
 
@@ -94,42 +58,6 @@ class Track(Base):
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
 
-@event.listens_for(Track, "after_insert")
-def insert_log(mapper, connection, target):
-    orm_log_after(
-        tablename="track", method="created", owner_id=target.owner_id, id=target.id
-    )
-
-
-@event.listens_for(Track, "before_insert")
-def insert_log(mapper, connection, target):
-    orm_log_before(tablename="track", method="created", owner_id=target.owner_id)
-
-
-@event.listens_for(Track, "before_update")
-def update_log(mapper, connection, target):
-    orm_log_before(tablename="track", method="update", owner_id=target.owner_id)
-
-
-@event.listens_for(Track, "after_update")
-def update_log(mapper, connection, target):
-    orm_log_after(
-        tablename="track", method="update", owner_id=target.owner_id, id=target.id
-    )
-
-
-@event.listens_for(Track, "before_delete")
-def delete_log(mapper, connection, target):
-    orm_log_before(tablename="track", method="delete", owner_id=target.owner_id)
-
-
-@event.listens_for(Track, "after_delete")
-def delete_log(mapper, connection, target):
-    orm_log_after(
-        tablename="track", method="delete", owner_id=target.owner_id, id=target.id
-    )
-
-
 class Translation(Base):
     __tablename__ = "translation"
 
@@ -141,45 +69,6 @@ class Translation(Base):
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
 
-@event.listens_for(Translation, "after_insert")
-def insert_log(mapper, connection, target):
-    orm_log_after(
-        tablename="translation",
-        method="created",
-        owner_id=target.owner_id,
-        id=target.id,
-    )
-
-
-@event.listens_for(Translation, "before_insert")
-def insert_log(mapper, connection, target):
-    orm_log_before(tablename="translation", method="created", owner_id=target.owner_id)
-
-
-@event.listens_for(Translation, "before_update")
-def update_log(mapper, connection, target):
-    orm_log_before(tablename="translation", method="update", owner_id=target.owner_id)
-
-
-@event.listens_for(Translation, "after_update")
-def update_log(mapper, connection, target):
-    orm_log_after(
-        tablename="translation", method="update", owner_id=target.owner_id, id=target.id
-    )
-
-
-@event.listens_for(Translation, "before_delete")
-def delete_log(mapper, connection, target):
-    orm_log_before(tablename="translation", method="delete", owner_id=target.owner_id)
-
-
-@event.listens_for(Translation, "after_delete")
-def delete_log(mapper, connection, target):
-    orm_log_after(
-        tablename="translation", method="delete", owner_id=target.owner_id, id=target.id
-    )
-
-
 class User(Base):
     __tablename__ = "user"
 
@@ -188,3 +77,14 @@ class User(Base):
     name = db.Column(db.String(200), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     admin = db.Column(db.Boolean, default=False)
+
+
+@event.listens_for(Session, "after_flush")
+def after_flush(session, flush_context):
+
+    for obj in session.new:
+        orm_log_after(obj.__table__, "create", obj.owner_id, obj.id)
+    for obj in session.deleted:
+        orm_log_after(obj.__table__, "delete", obj.owner_id, obj.id)
+    for obj in session.dirty:
+        orm_log_after(obj.__table__, "update", obj.owner_id, obj.id)
