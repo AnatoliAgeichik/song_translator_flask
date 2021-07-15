@@ -106,7 +106,7 @@ class TrackListResource(Resource):
             name=request.json["name"],
             text=request.json["text"],
             original_language=request.json["original_language"],
-            singer=get_singers_from_name(request.json["singer"]),
+            singers=get_singers_from_name(request.json["singers"]),
             owner_id=user_id,
         )
 
@@ -125,7 +125,7 @@ class TrackResource(Resource):
         track.name = request.json["name"]
         track.text = request.json["text"]
         track.original_language = request.json["original_language"]
-        track.singer = get_singers_from_id(request.json["singer"])
+        track.singers = get_singers_from_id(request.json["singers"])
         db.session.commit()
         return track_schema.dump(track)
 

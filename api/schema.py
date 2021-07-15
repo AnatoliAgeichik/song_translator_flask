@@ -3,7 +3,7 @@ from .config import ma
 
 class SingerSchema(ma.Schema):
     class Meta:
-        fields = ("id", "name", "created_date", "update_date", "owner_id")
+        fields = ("id", "name", "created_timestamp", "update_timestamp", "owner_id")
 
 
 singer_schema = SingerSchema()
@@ -11,16 +11,16 @@ singers_schema = SingerSchema(many=True)
 
 
 class TrackSchema(ma.Schema):
-    singer = ma.Nested(SingerSchema(only=("name",)), many=True)
+    singers = ma.Nested(SingerSchema(only=("name",)), many=True)
 
     class Meta:
         fields = (
             "id",
             "name",
             "text",
-            "created_date",
-            "update_date",
-            "singer",
+            "created_timestamp",
+            "update_timestamp",
+            "singers",
             "owner_id",
         )
 
@@ -37,8 +37,8 @@ class TranslationSchema(ma.Schema):
             "text",
             "language",
             "auto_translate",
-            "created_date",
-            "update_date",
+            "created_timestamp",
+            "update_timestamp",
             "owner_id",
         )
 
@@ -54,9 +54,9 @@ class UserSchema(ma.Schema):
             "public_id",
             "name",
             "admin",
-            "created_date",
+            "created_timestamp",
             "password",
-            "update_date",
+            "update_timestamp",
         )
 
 
