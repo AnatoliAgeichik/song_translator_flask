@@ -9,9 +9,22 @@ from sqlalchemy import or_
 
 from .config import db, app, pagination
 from .models import Singer, Track, Translation, User
-from .schema import singers_schema, singer_schema, track_schema, tracks_schema, translation_schema, translations_schema,\
-                    user_schema
-from .services import token_required, get_search_value
+from .schema import (
+    singers_schema,
+    singer_schema,
+    track_schema,
+    tracks_schema,
+    translation_schema,
+    translations_schema,
+    user_schema,
+)
+from .services import (
+    token_required,
+    get_search_value,
+    get_sort_parameter_singer,
+    get_sort_parameter_track,
+    get_sort_parameter_translation,
+)
 
 
 def get_singers_from_name(singers_name):
@@ -31,19 +44,24 @@ def get_singers_from_id(singers_id):
 def get_translation(track_id):
     translator = google_translator()
     track = Track.query.get(track_id)
-    return translator.translate(track.text, lang_tgt=request.json["language"], lang_src=track.original_language)
+    return translator.translate(
+        track.text, lang_tgt=request.json["language"], lang_src=track.original_language
+    )
 
 
 class SingerListResource(Resource):
     def get(self):
-        return pagination.paginate(Singer.query.filter(Singer.name.like(f'%{get_search_value(request)}%')).all(),
-                                   singers_schema, True)
+        return pagination.paginate(
+            Singer.query.filter(
+                Singer.name.ilike(f"%{get_search_value(request)}%")
+            ).order_by(get_sort_parameter_singer(request)),
+            singers_schema,
+            marshmallow=True,
+        )
 
     @token_required
-    def post(self):
-        new_singer = Singer(
-            name=request.json['name']
-        )
+    def post(self, user_id):
+        new_singer = Singer(name=request.json["name"], owner_id=user_id)
         db.session.add(new_singer)
         db.session.commit()
         return singer_schema.dump(new_singer)
@@ -54,34 +72,42 @@ class SingerResource(Resource):
         return singer_schema.dump(Singer.query.get_or_404(id))
 
     @token_required
-    def put(self, id):
+    def put(self, user_id, id):
         singer = Singer.query.get_or_404(id)
-        singer.name = request.json['name']
+        singer.name = request.json["name"]
         db.session.commit()
         return singer_schema.dump(singer)
 
     @token_required
-    def delete(self, id):
+    def delete(self, user_id, id):
         db.session.delete(Singer.query.get_or_404(id))
         db.session.commit()
-        return '', 204
+        return "", 204
 
 
 class TrackListResource(Resource):
     def get(self):
         search = get_search_value(request)
-        return pagination.paginate(Track.query.filter(or_(Track.name.like(f'%{search}%'),
-                                                          Track.text.like(f'%{search}%'),
-                                                          Track.original_language.like(f'%{search}%'))),
-                                   tracks_schema, True)
+        return pagination.paginate(
+            Track.query.filter(
+                or_(
+                    Track.name.ilike(f"%{search}%"),
+                    Track.text.ilike(f"%{search}%"),
+                    Track.original_language.ilike(f"%{search}%"),
+                )
+            ).order_by(get_sort_parameter_track(request)),
+            tracks_schema,
+            marshmallow=True,
+        )
 
     @token_required
-    def post(self):
+    def post(self, user_id):
         new_track = Track(
-            name=request.json['name'],
-            text=request.json['text'],
-            original_language=request.json['original_language'],
-            singer=get_singers_from_name(request.json['singer'])
+            name=request.json["name"],
+            text=request.json["text"],
+            original_language=request.json["original_language"],
+            singers=get_singers_from_name(request.json["singers"]),
+            owner_id=user_id,
         )
 
         db.session.add(new_track)
@@ -94,39 +120,50 @@ class TrackResource(Resource):
         return track_schema.dump(Track.query.get_or_404(id))
 
     @token_required
-    def put(self, id):
+    def put(self, user_id, id):
         track = Track.query.get_or_404(id)
-        track.name = request.json['name']
-        track.text = request.json['text']
-        track.original_language = request.json['original_language']
-        track.singer = get_singers_from_id(request.json['singer'])
+        track.name = request.json["name"]
+        track.text = request.json["text"]
+        track.original_language = request.json["original_language"]
+        track.singers = get_singers_from_id(request.json["singers"])
         db.session.commit()
         return track_schema.dump(track)
 
     @token_required
-    def delete(self, id):
+    def delete(self, user_id, id):
         db.session.delete(Track.query.get_or_404(id))
         db.session.commit()
-        return '', 204
+        return "", 204
 
 
 class TranslationListResource(Resource):
     def get(self, id):
         search = get_search_value(request)
-        return pagination.paginate(Translation.query.filter_by(track_id=id)
-                                   .filter(or_(Translation.text.like(f'%{search}%'),
-                                           Translation.language.like(f'%{search}%'))), translations_schema, True)
+        return pagination.paginate(
+            Translation.query.filter_by(track_id=id)
+            .filter(
+                or_(
+                    Translation.text.ilike(f"%{search}%"),
+                    Translation.language.ilike(f"%{search}%"),
+                )
+            )
+            .order_by(get_sort_parameter_translation(request)),
+            translations_schema,
+            marshmallow=True,
+        )
 
-    def post(self, id):
-        if request.json['auto_translate']:
+    @token_required
+    def post(self, user_id, id):
+        if request.json["auto_translate"]:
             text = get_translation(id)
         else:
-            text = request.json['text']
+            text = request.json["text"]
         new_translation = Translation(
             text=text,
-            language=request.json['language'],
-            auto_translate=request.json['auto_translate'],
-            track_id=id
+            language=request.json["language"],
+            auto_translate=request.json["auto_translate"],
+            track_id=id,
+            owner_id=user_id,
         )
         db.session.add(new_translation)
         db.session.commit()
@@ -138,34 +175,37 @@ class TranslationResource(Resource):
         return translation_schema.dump(Translation.query.get_or_404(transl_id))
 
     @token_required
-    def put(self, id, transl_id):
+    def put(self, user_id, id, transl_id):
         translation = Translation.query.get_or_404(transl_id)
 
-        if request.json['auto_translate']:
+        if request.json["auto_translate"]:
             translation.text = get_translation(id)
         else:
-            translation.text = request.json['text']
+            translation.text = request.json["text"]
 
-        translation.auto_translate = request.json['auto_translate']
-        translation.language = request.json['language']
+        translation.auto_translate = request.json["auto_translate"]
+        translation.language = request.json["language"]
         translation.track_id = id
         db.session.commit()
         return translation_schema.dump(translation)
 
     @token_required
-    def delete(self, id, transl_id):
+    def delete(self, user_id, id, transl_id):
         db.session.delete(Translation.query.get_or_404(transl_id))
         db.session.commit()
-        return '', 204
+        return "", 204
 
 
 class SignupUser(Resource):
     def post(self):
         data = request.get_json()
-
-        hashed_password = generate_password_hash(data['password'], method='sha256')
-
-        new_user = User(public_id=str(uuid.uuid4()), name=data['name'], password=hashed_password, admin=False)
+        hashed_password = generate_password_hash(data["password"], method="sha256")
+        new_user = User(
+            public_id=str(uuid.uuid4()),
+            name=data["name"],
+            password=hashed_password,
+            admin=False,
+        )
         db.session.add(new_user)
         db.session.commit()
         return user_schema.dump(new_user)
@@ -176,14 +216,26 @@ class LoginUser(Resource):
         auth = request.authorization
 
         if not auth or not auth.username or not auth.password:
-            return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+            return make_response(
+                "could not verify",
+                401,
+                {"WWW.Authentication": 'Basic realm: "login required"'},
+            )
 
         user = User.query.filter_by(name=auth.username).first()
 
         if check_password_hash(user.password, auth.password):
             token = jwt.encode(
-                {'public_id': user.public_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
-                app.config['SECRET_KEY'])
-            return jsonify({'token': token})
+                {
+                    "public_id": user.public_id,
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+                },
+                app.config["SECRET_KEY"],
+            )
+            return jsonify({"token": token})
 
-        return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+        return make_response(
+            "could not verify",
+            401,
+            {"WWW.Authentication": 'Basic realm: "login required"'},
+        )

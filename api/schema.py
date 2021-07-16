@@ -1,65 +1,63 @@
-from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
-
-from .models import Singer, Track, Translation, User
+from .config import ma
 
 
-class SingerSchema(SQLAlchemySchema):
+class SingerSchema(ma.Schema):
     class Meta:
-        model = Singer
-        include_relationships = True
-        load_instance = True
-
-    id = auto_field()
-    name = auto_field()
+        fields = ("id", "name", "created_timestamp", "update_timestamp", "owner_id")
 
 
 singer_schema = SingerSchema()
 singers_schema = SingerSchema(many=True)
 
 
-class TrackSchema(SQLAlchemySchema):
-    class Meta:
-        model = Track
-        include_relationships = True
-        load_instance = True
+class TrackSchema(ma.Schema):
+    singers = ma.Nested(SingerSchema(only=("name",)), many=True)
 
-    id = auto_field()
-    name = auto_field()
-    text = auto_field()
-    original_language = auto_field()
-    singer = auto_field()
+    class Meta:
+        fields = (
+            "id",
+            "name",
+            "text",
+            "created_timestamp",
+            "update_timestamp",
+            "singers",
+            "owner_id",
+        )
 
 
 track_schema = TrackSchema()
 tracks_schema = TrackSchema(many=True)
 
 
-class TranslationSchema(SQLAlchemySchema):
+class TranslationSchema(ma.Schema):
     class Meta:
-        model = Translation
-        load_instance = True
-
-    id = auto_field()
-    track_id = auto_field()
-    text = auto_field()
-    language = auto_field()
-    auto_translate = auto_field()
+        fields = (
+            "id",
+            "track_id",
+            "text",
+            "language",
+            "auto_translate",
+            "created_timestamp",
+            "update_timestamp",
+            "owner_id",
+        )
 
 
 translation_schema = TranslationSchema()
 translations_schema = TranslationSchema(many=True)
 
 
-class UserSchema(SQLAlchemySchema):
+class UserSchema(ma.Schema):
     class Meta:
-        model = User
-        load_instance = True
-
-    id = auto_field()
-    public_id = auto_field()
-    name = auto_field()
-    password = auto_field()
-    admin = auto_field()
+        fields = (
+            "id",
+            "public_id",
+            "name",
+            "admin",
+            "created_timestamp",
+            "password",
+            "update_timestamp",
+        )
 
 
 user_schema = UserSchema()
