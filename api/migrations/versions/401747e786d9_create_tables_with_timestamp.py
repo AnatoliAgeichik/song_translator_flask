@@ -1,8 +1,8 @@
-"""empty message
+"""create tables with timestamp
 
-Revision ID: da9f6c66d78e
+Revision ID: 401747e786d9
 Revises: 
-Create Date: 2021-07-13 18:46:45.221657
+Create Date: 2021-07-16 11:51:12.021897
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "da9f6c66d78e"
+revision = "401747e786d9"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -64,7 +64,7 @@ def upgrade():
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=64), nullable=False),
         sa.Column("text", sa.Text(), nullable=False),
-        sa.Column("original_language", sa.String(length=2), nullable=False),
+        sa.Column("original_language", sa.String(length=2), nullable=True),
         sa.Column("singer_id", sa.Integer(), nullable=True),
         sa.Column("owner_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
@@ -79,15 +79,15 @@ def upgrade():
     )
     op.create_table(
         "track_singers",
-        sa.Column("created_timestamp", sa.DateTime(), nullable=False),
+        sa.Column("singer_id", sa.Integer(), nullable=True),
+        sa.Column("track_id", sa.Integer(), nullable=True),
+        sa.Column("create_timestamp", sa.DateTime(), nullable=False),
         sa.Column(
             "update_timestamp",
             sa.DateTime(),
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.Column("singer_id", sa.Integer(), nullable=False),
-        sa.Column("track_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["singer_id"],
             ["singer.id"],
@@ -96,7 +96,6 @@ def upgrade():
             ["track_id"],
             ["track.id"],
         ),
-        sa.PrimaryKeyConstraint("singer_id", "track_id"),
     )
     op.create_table(
         "translation",

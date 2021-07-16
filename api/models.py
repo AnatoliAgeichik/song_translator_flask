@@ -65,7 +65,7 @@ class Track(Base):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
     text = db.Column(db.Text, nullable=False)
-    original_language = db.Column(db.String(2), default="en", nullable=False)
+    original_language = db.Column(db.String(2), default="en")
     singers = db.relationship(
         Singer, secondary=track_singers, backref=db.backref("track", lazy="dynamic")
     )
